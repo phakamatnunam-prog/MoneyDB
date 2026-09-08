@@ -1,12 +1,12 @@
 {
-  "projectId": "cohesive-continuity-qghtt",
-  "appId": "1:862912377563:web:7612f66e5ac577d714d2fe",
-  "apiKey": "AIzaSyAKPFmRXQGPhiNyEhVnI9FEUHtAVeWai1E",
-  "authDomain": "cohesive-continuity-qghtt.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-moneydb-99ff52e9-d18d-4b8d-ae4e-c127f53f61eb",
-  "storageBucket": "cohesive-continuity-qghtt.firebasestorage.app",
-  "messagingSenderId": "862912377563",
-  "measurementId": "",
-  "oAuthClientId": "862912377563-9mgk5c3dklr3bsh25ur41k2mg4he8u7r.apps.googleusercontent.com",
+  "projectId": "moneydb-68c6c",
+  "appId": "1:643784197937:web:a4125eb6ee12926f74d210",
+  "apiKey": "AIzaSyDi0LwhG1yiOsvPwmBAf3WL4NgPTFFDlVE",
+  "authDomain": "moneydb-68c6c.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "moneydb-68c6c.firebasestorage.app",
+  "messagingSenderId": "643784197937",
+  "measurementId": "G-XH978P2MXK",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

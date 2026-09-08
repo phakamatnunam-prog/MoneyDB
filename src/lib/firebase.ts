@@ -1,8 +1,13 @@
 import { initializeApp } from 'firebase/app';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInAnonymously,
   signOut as fbSignOut,
   User,
 } from 'firebase/auth';
@@ -11,6 +16,7 @@ import {
   doc,
   collection,
   setDoc,
+  getDoc,
   deleteDoc,
   onSnapshot,
   query,
@@ -25,8 +31,24 @@ import { Transaction, UserProfile } from '../types';
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// CRITICAL: Initialize Firestore with specific databaseId as declared in config
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Initialize Optional Analytics in supported environments
+if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+  isSupported()
+    .then((supported) => {
+      if (supported) {
+        getAnalytics(app);
+      }
+    })
+    .catch(() => {});
+}
+
+// CRITICAL: Initialize Firestore with specific databaseId if provided, or default database
+export const db =
+  firebaseConfig.firestoreDatabaseId &&
+  firebaseConfig.firestoreDatabaseId !== '(default)' &&
+  firebaseConfig.firestoreDatabaseId !== ''
+    ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+    : getFirestore(app);
 
 // Auth instance
 export const auth = getAuth(app);
@@ -97,7 +119,9 @@ export async function testConnection(): Promise<boolean> {
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+      console.warn(
+        'Firestore is currently offline or the database has not been created yet in Firebase Console.'
+      );
       return false;
     }
     // Permission denied is expected for test path because of default deny, meaning server is reachable
@@ -112,6 +136,39 @@ export async function signInWithGoogle(): Promise<User> {
     return result.user;
   } catch (err) {
     console.error('Sign-in error:', err);
+    throw err;
+  }
+}
+
+export async function signInWithEmail(email: string, pass: string): Promise<User> {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email.trim(), pass);
+    return result.user;
+  } catch (err) {
+    console.error('Sign-in with email error:', err);
+    throw err;
+  }
+}
+
+export async function registerWithEmail(email: string, pass: string, displayName?: string): Promise<User> {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+    if (displayName && result.user) {
+      await updateProfile(result.user, { displayName });
+    }
+    return result.user;
+  } catch (err) {
+    console.error('Register with email error:', err);
+    throw err;
+  }
+}
+
+export async function signInGuest(): Promise<User> {
+  try {
+    const result = await signInAnonymously(auth);
+    return result.user;
+  } catch (err) {
+    console.error('Guest sign-in error:', err);
     throw err;
   }
 }
@@ -262,20 +319,19 @@ export async function initUserProfile(user: User): Promise<void> {
   const path = `users/${user.uid}`;
   const docRef = doc(db, 'users', user.uid);
   try {
-    await setDoc(
-      docRef,
-      {
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await setDoc(docRef, {
         userId: user.uid,
-        email: user.email || '',
-        displayName: user.displayName || 'ผู้ใช้งาน',
+        email: user.email || (user.isAnonymous ? 'guest@moneydb.app' : ''),
+        displayName: user.displayName || (user.isAnonymous ? 'ผู้เยี่ยมชม (Guest)' : 'ผู้ใช้งาน'),
         monthlyBudget: 15000,
         currency: 'THB',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+      });
+    }
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.warn('initUserProfile non-blocking warning:', error);
   }
 }
